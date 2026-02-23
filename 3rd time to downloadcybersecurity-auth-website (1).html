@@ -1,0 +1,1538 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CyberGuard — Authentication & Access Control</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Exo+2:wght@300;400;600;700;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #050b12;
+    --surface: #0a1628;
+    --surface2: #0f2040;
+    --accent: #00e5ff;
+    --accent2: #ff6b35;
+    --accent3: #39ff14;
+    --text: #c8d8e8;
+    --text-dim: #5a7a9a;
+    --border: rgba(0,229,255,0.15);
+    --glow: 0 0 20px rgba(0,229,255,0.3);
+    --font-mono: 'Share Tech Mono', monospace;
+    --font-main: 'Exo 2', sans-serif;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-main);
+    font-weight: 300;
+    overflow-x: hidden;
+    cursor: none;
+  }
+
+  /* Custom Cursor */
+  .cursor {
+    position: fixed;
+    width: 12px; height: 12px;
+    background: var(--accent);
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 9999;
+    mix-blend-mode: screen;
+    transition: transform 0.1s;
+    box-shadow: 0 0 10px var(--accent);
+  }
+  .cursor-ring {
+    position: fixed;
+    width: 36px; height: 36px;
+    border: 1px solid var(--accent);
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 9998;
+    transition: all 0.15s ease;
+    opacity: 0.5;
+  }
+
+  /* Grid Background */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(0,229,255,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,229,255,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    z-index: 0;
+    pointer-events: none;
+  }
+
+  /* Scanlines */
+  body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(0,0,0,0.08) 2px,
+      rgba(0,0,0,0.08) 4px
+    );
+    z-index: 0;
+    pointer-events: none;
+  }
+
+  /* NAV */
+  nav {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 100;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.2rem 3rem;
+    background: rgba(5,11,18,0.9);
+    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+  }
+  .nav-logo {
+    font-family: var(--font-mono);
+    color: var(--accent);
+    font-size: 1.2rem;
+    letter-spacing: 2px;
+    text-shadow: var(--glow);
+  }
+  .nav-links { display: flex; gap: 2rem; list-style: none; }
+  .nav-links a {
+    color: var(--text-dim);
+    text-decoration: none;
+    font-size: 0.85rem;
+    font-weight: 600;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    transition: color 0.3s;
+    font-family: var(--font-mono);
+  }
+  .nav-links a:hover { color: var(--accent); text-shadow: var(--glow); }
+
+  /* SECTIONS */
+  section { position: relative; z-index: 1; }
+
+  /* HERO */
+  .hero {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    padding: 8rem 2rem 4rem;
+    overflow: hidden;
+  }
+  .hero-badge {
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    color: var(--accent3);
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    margin-bottom: 1.5rem;
+    padding: 0.4rem 1.2rem;
+    border: 1px solid var(--accent3);
+    border-radius: 2px;
+    animation: fadeInUp 0.8s ease both;
+  }
+  .hero h1 {
+    font-size: clamp(3rem, 7vw, 6rem);
+    font-weight: 900;
+    line-height: 1;
+    animation: fadeInUp 0.8s 0.2s ease both;
+    letter-spacing: -2px;
+  }
+  .hero h1 span { color: var(--accent); text-shadow: var(--glow); }
+  .hero-sub {
+    font-size: 1.15rem;
+    color: var(--text-dim);
+    margin: 1.5rem 0 2.5rem;
+    max-width: 600px;
+    font-weight: 300;
+    animation: fadeInUp 0.8s 0.4s ease both;
+  }
+  .hero-cta {
+    display: flex; gap: 1rem; flex-wrap: wrap; justify-content: center;
+    animation: fadeInUp 0.8s 0.6s ease both;
+  }
+  .btn {
+    padding: 0.85rem 2rem;
+    font-family: var(--font-mono);
+    font-size: 0.85rem;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    text-decoration: none;
+    border-radius: 2px;
+    transition: all 0.3s;
+    cursor: none;
+  }
+  .btn-primary {
+    background: var(--accent);
+    color: var(--bg);
+    font-weight: 700;
+  }
+  .btn-primary:hover {
+    box-shadow: 0 0 30px rgba(0,229,255,0.5);
+    transform: translateY(-2px);
+  }
+  .btn-ghost {
+    border: 1px solid var(--border);
+    color: var(--text);
+  }
+  .btn-ghost:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  /* Floating orbs */
+  .orb {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(80px);
+    pointer-events: none;
+    animation: float 8s ease-in-out infinite;
+  }
+  .orb1 { width: 400px; height: 400px; background: rgba(0,229,255,0.06); top: 10%; left: -10%; animation-delay: 0s; }
+  .orb2 { width: 300px; height: 300px; background: rgba(255,107,53,0.06); bottom: 10%; right: -5%; animation-delay: 3s; }
+  .orb3 { width: 250px; height: 250px; background: rgba(57,255,20,0.04); top: 40%; right: 20%; animation-delay: 6s; }
+
+  @keyframes float {
+    0%, 100% { transform: translateY(0) scale(1); }
+    50% { transform: translateY(-30px) scale(1.05); }
+  }
+  @keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(30px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* Terminal widget */
+  .terminal {
+    margin-top: 3rem;
+    background: rgba(10,22,40,0.9);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    width: min(600px, 90vw);
+    text-align: left;
+    overflow: hidden;
+    animation: fadeInUp 0.8s 0.8s ease both;
+    box-shadow: var(--glow);
+  }
+  .terminal-bar {
+    background: var(--surface2);
+    padding: 0.6rem 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .dot { width: 10px; height: 10px; border-radius: 50%; }
+  .dot-r { background: #ff5f57; }
+  .dot-y { background: #febc2e; }
+  .dot-g { background: #28c840; }
+  .terminal-title { font-family: var(--font-mono); font-size: 0.75rem; color: var(--text-dim); margin-left: auto; }
+  .terminal-body { padding: 1.2rem 1.5rem; font-family: var(--font-mono); font-size: 0.82rem; line-height: 1.8; }
+  .t-line { display: flex; gap: 0.5rem; }
+  .t-prompt { color: var(--accent3); }
+  .t-cmd { color: var(--text); }
+  .t-out { color: var(--text-dim); padding-left: 1rem; }
+  .t-out.ok { color: var(--accent3); }
+  .t-out.warn { color: var(--accent2); }
+  .cursor-blink {
+    display: inline-block;
+    width: 8px; height: 14px;
+    background: var(--accent);
+    animation: blink 1s step-end infinite;
+    vertical-align: bottom;
+  }
+  @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+  .t-line-gap { margin-top: 0.5rem; }
+  .def-flow { font-size: 0.85rem; font-family: var(--font-mono); }
+  .def-flow-blue { color: var(--accent); }
+  .def-flow-orange { color: var(--accent2); }
+  .pin-dots-top { margin-top: 1rem; }
+  .atm-key-clr { color: var(--accent2); }
+  .atm-key-ok { color: var(--accent3); }
+  .model-abbr-dac { color: var(--accent2); text-shadow: 0 0 20px rgba(255,107,53,0.3); }
+  .model-abbr-mac { color: var(--accent3); text-shadow: 0 0 20px rgba(57,255,20,0.3); }
+  .model-note { font-size: 0.78rem; color: var(--text-dim); }
+  .table-wrapper { margin-top: 3rem; }
+  .abstract-label { color: var(--accent); }
+  .keywords-label { font-family: var(--font-mono); font-size: 0.72rem; color: var(--text-dim); margin-bottom: 0.8rem; letter-spacing: 2px; }
+  .hosting-icon { font-size: 2rem; margin-bottom: 0.8rem; }
+  .github-guide { margin-top: 3rem; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 2rem; text-align: center; }
+  .github-guide h3 { margin-bottom: 1rem; font-size: 1.3rem; }
+  .github-steps { text-align: left; max-width: 600px; margin: 0 auto; font-family: var(--font-mono); font-size: 0.8rem; line-height: 2; color: var(--text-dim); }
+  .step-accent { color: var(--accent); }
+  .step-accent3 { color: var(--accent3); }
+  .footer-sub { margin-top: 0.5rem; color: var(--text-dim); font-size: 0.78rem; }
+
+  /* ── ASSIGNMENT SECTION ── */
+  .assignment-section { padding: 6rem 0; }
+  .assign-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 1.5rem; margin-bottom: 3rem; }
+  .assign-card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 8px;
+    padding: 2rem; position: relative; overflow: hidden; transition: all 0.3s;
+  }
+  .assign-card:hover { transform: translateY(-4px); border-color: rgba(0,229,255,0.4); box-shadow: var(--glow); }
+  .assign-card::before { content:''; position:absolute; top:0; left:0; width:3px; height:100%; background: var(--accent); }
+  .assign-card.q2::before { background: var(--accent2); }
+  .assign-card.q3::before { background: var(--accent3); }
+  .assign-q { font-family: var(--font-mono); font-size:0.68rem; color: var(--accent); letter-spacing:2px; margin-bottom:0.6rem; }
+  .assign-card.q2 .assign-q { color: var(--accent2); }
+  .assign-card.q3 .assign-q { color: var(--accent3); }
+  .assign-card h3 { font-size:1.05rem; font-weight:700; margin-bottom:0.8rem; }
+  .assign-card p { font-size:0.84rem; color: var(--text-dim); line-height:1.7; }
+  .assign-meta {
+    background: var(--surface); border: 1px solid var(--border); border-radius:8px;
+    padding: 2rem; display: grid; grid-template-columns: repeat(3,1fr); gap:1rem; margin-bottom:2rem;
+  }
+  .meta-item { text-align:center; }
+  .meta-label { font-family:var(--font-mono); font-size:0.65rem; color:var(--text-dim); letter-spacing:2px; text-transform:uppercase; margin-bottom:0.3rem; }
+  .meta-value { font-size:0.95rem; font-weight:600; color:var(--text); }
+  .wifi-table { width:100%; border-collapse:collapse; font-size:0.8rem; margin-top:1.5rem; }
+  .wifi-table th { background:var(--surface2); padding:0.7rem 1rem; font-family:var(--font-mono); font-size:0.65rem; letter-spacing:2px; text-transform:uppercase; color:var(--accent); border-bottom:1px solid var(--border); text-align:left; }
+  .wifi-table td { padding:0.7rem 1rem; border-bottom:1px solid var(--border); color:var(--text-dim); vertical-align:top; }
+  .wifi-table tr:hover td { background:rgba(0,229,255,0.03); color:var(--text); }
+  .content-block { background:var(--surface); border:1px solid var(--border); border-left:3px solid var(--accent); border-radius:4px; padding:1.5rem; margin-top:1.5rem; font-size:0.88rem; line-height:1.8; color:var(--text-dim); }
+  .content-block.orange { border-left-color: var(--accent2); }
+  .content-block.green { border-left-color: var(--accent3); }
+  .content-block h4 { color:var(--text); font-size:0.95rem; margin-bottom:0.6rem; font-weight:600; }
+  .step-list { display:flex; flex-direction:column; gap:0.5rem; margin-top:0.8rem; }
+  .step-item { display:flex; gap:0.8rem; align-items:flex-start; }
+  .step-num { font-family:var(--font-mono); font-size:0.65rem; color:var(--accent); background:rgba(0,229,255,0.1); padding:0.15rem 0.4rem; border-radius:2px; white-space:nowrap; margin-top:0.1rem; }
+  .grade-badge { display:inline-block; font-family:var(--font-mono); font-size:1.8rem; font-weight:900; color:var(--accent3); text-shadow: 0 0 20px rgba(57,255,20,0.4); margin-right:0.5rem; }
+
+  /* ── LAB SECTION ── */
+  .lab-section { padding: 6rem 0; background: var(--surface); }
+  .lab-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; }
+  .lab-card {
+    background: var(--bg); border:1px solid var(--border); border-radius:8px;
+    padding:1.8rem; transition:all 0.3s;
+  }
+  .lab-card:hover { border-color:rgba(0,229,255,0.3); transform:translateY(-3px); }
+  .lab-part { font-family:var(--font-mono); font-size:0.65rem; color:var(--accent2); letter-spacing:2px; text-transform:uppercase; margin-bottom:0.5rem; }
+  .lab-card h4 { font-size:1rem; font-weight:700; margin-bottom:0.8rem; }
+  .lab-card p { font-size:0.84rem; color:var(--text-dim); line-height:1.7; }
+  .lab-task { display:flex; gap:0.7rem; align-items:flex-start; padding:0.6rem 0; border-bottom:1px solid var(--border); }
+  .lab-task:last-child { border-bottom:none; }
+  .task-icon { font-size:1rem; margin-top:0.05rem; }
+  .lab-answer { background:rgba(0,229,255,0.05); border:1px solid var(--border); border-radius:4px; padding:0.8rem 1rem; margin-top:0.5rem; font-size:0.82rem; color:var(--accent3); font-family:var(--font-mono); }
+  .cia-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:1rem; margin-top:1.5rem; }
+  .cia-item { background:var(--surface2); border-radius:6px; padding:1rem; text-align:center; border:1px solid var(--border); }
+  .cia-letter { font-family:var(--font-mono); font-size:1.8rem; font-weight:900; color:var(--accent); }
+  .cia-name { font-size:0.75rem; color:var(--text-dim); margin-top:0.2rem; }
+  .cia-item.violated .cia-letter { color:var(--accent2); }
+  .cia-item.violated .cia-name { color:var(--accent2); }
+
+  /* ── PROFILE SECTION ── */
+  .profile-section { padding: 6rem 0; }
+  .profile-card {
+    max-width:900px; margin:0 auto;
+    background:var(--surface); border:1px solid var(--border); border-radius:16px;
+    padding:3rem; text-align:center; position:relative; overflow:hidden;
+  }
+  .profile-card::before {
+    content:''; position:absolute; top:0; left:0; right:0; height:3px;
+    background: linear-gradient(90deg, var(--accent), var(--accent2), var(--accent3));
+  }
+  .profile-avatar {
+    width:90px; height:90px; border-radius:50%;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    display:flex; align-items:center; justify-content:center;
+    font-size:2.5rem; margin:0 auto 1.2rem; border:2px solid var(--border);
+    box-shadow: 0 0 30px rgba(0,229,255,0.2);
+  }
+  .profile-name { font-size:1.8rem; font-weight:900; margin-bottom:0.3rem; letter-spacing:-0.5px; }
+  .profile-title { font-family:var(--font-mono); font-size:0.8rem; color:var(--accent); letter-spacing:2px; margin-bottom:0.3rem; }
+  .profile-info { color:var(--text-dim); font-size:0.88rem; margin-bottom:2rem; }
+  .social-grid { display:flex; flex-wrap:wrap; gap:1rem; justify-content:center; margin-bottom:2.5rem; }
+  .social-btn {
+    display:flex; align-items:center; gap:0.6rem;
+    padding:0.7rem 1.4rem; border-radius:6px; text-decoration:none;
+    font-size:0.85rem; font-weight:600; transition:all 0.3s; cursor:none;
+    border:1px solid var(--border);
+  }
+  .social-btn:hover { transform:translateY(-3px); box-shadow: 0 8px 20px rgba(0,0,0,0.3); }
+  .social-btn.github { background:rgba(255,255,255,0.05); color:#fff; }
+  .social-btn.github:hover { background:#333; border-color:#555; }
+  .social-btn.vercel { background:rgba(255,255,255,0.05); color:#fff; }
+  .social-btn.vercel:hover { background:#1a1a1a; border-color:#555; }
+  .social-btn.facebook { background:rgba(24,119,242,0.1); color:#1877f2; border-color:rgba(24,119,242,0.3); }
+  .social-btn.facebook:hover { background:#1877f2; color:#fff; }
+  .social-btn.instagram { background:rgba(225,48,108,0.1); color:#e1306c; border-color:rgba(225,48,108,0.3); }
+  .social-btn.instagram:hover { background: linear-gradient(45deg,#f09433,#e6683c,#dc2743,#cc2366,#bc1888); color:#fff; border-color:transparent; }
+  .social-btn.linkedin { background:rgba(0,119,181,0.1); color:#0077b5; border-color:rgba(0,119,181,0.3); }
+  .social-btn.linkedin:hover { background:#0077b5; color:#fff; }
+  .social-btn.tryhackme { background:rgba(165,0,0,0.1); color:#ff0000; border-color:rgba(255,0,0,0.25); }
+  .social-btn.tryhackme:hover { background:#c11111; color:#fff; border-color:#c11111; }
+  .thm-inline-link { color:inherit; text-decoration:underline; }
+  .social-icon { font-size:1.1rem; }
+
+  /* Feedback box */
+  .feedback-box { background:var(--bg); border:1px solid var(--border); border-radius:8px; padding:1.5rem; text-align:left; }
+  .feedback-box h4 { font-size:0.95rem; font-weight:700; margin-bottom:0.8rem; text-align:center; }
+  .feedback-note { font-size:0.82rem; color:var(--text-dim); text-align:center; margin-bottom:1rem; line-height:1.6; }
+  .feedback-links { display:flex; flex-wrap:wrap; gap:0.5rem; justify-content:center; }
+  .feedback-link {
+    font-family:var(--font-mono); font-size:0.72rem; padding:0.4rem 0.9rem;
+    border:1px solid var(--border); border-radius:3px; color:var(--text-dim);
+    text-decoration:none; transition:all 0.3s; cursor:none;
+  }
+  .feedback-link:hover { border-color:var(--accent); color:var(--accent); background:rgba(0,229,255,0.05); }
+
+  .step-num-orange { color:var(--accent2); background:rgba(255,107,53,0.1); }
+  .step-num-green  { color:var(--accent3); background:rgba(57,255,20,0.1); }
+  .section-header-sm { margin-bottom:1.5rem; }
+  .h2-sub { font-size:1.8rem; }
+  .step-list-gap { margin-top:0.8rem; }
+  .reveal-gap { margin-top:3rem; }
+  .col-stack { display:flex; flex-direction:column; gap:1rem; }
+  .cia-violation-note { font-size:0.84rem; color:var(--text-dim); margin-bottom:1rem; }
+    .assign-grid, .assign-meta { grid-template-columns:1fr; }
+    .lab-grid { grid-template-columns:1fr; }
+    .cia-grid { grid-template-columns:1fr; }
+  }
+
+  /* CONTENT */
+  .container { max-width: 1200px; margin: 0 auto; padding: 0 2rem; }
+
+  .section-header {
+    text-align: center;
+    margin-bottom: 4rem;
+  }
+  .section-tag {
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    color: var(--accent);
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    margin-bottom: 1rem;
+    display: block;
+  }
+  .section-header h2 {
+    font-size: clamp(2rem, 4vw, 3rem);
+    font-weight: 700;
+    letter-spacing: -1px;
+  }
+  .section-header p {
+    color: var(--text-dim);
+    font-size: 1rem;
+    margin-top: 0.8rem;
+    max-width: 500px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  /* DEFINITION SECTION */
+  .def-section { padding: 6rem 0; }
+  .def-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+  }
+  .def-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 2.5rem;
+    position: relative;
+    overflow: hidden;
+    transition: transform 0.3s, box-shadow 0.3s;
+  }
+  .def-card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--glow);
+    border-color: rgba(0,229,255,0.4);
+  }
+  .def-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0;
+    width: 3px; height: 100%;
+    background: var(--accent);
+  }
+  .def-card.orange::before { background: var(--accent2); }
+  .def-icon { font-size: 2.5rem; margin-bottom: 1rem; }
+  .def-question {
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    color: var(--accent);
+    letter-spacing: 2px;
+    margin-bottom: 0.5rem;
+  }
+  .def-card.orange .def-question { color: var(--accent2); }
+  .def-card h3 { font-size: 1.5rem; font-weight: 700; margin-bottom: 1rem; }
+  .def-card p { color: var(--text-dim); line-height: 1.7; font-size: 0.95rem; }
+
+  /* ATM EXAMPLE */
+  .example-section { padding: 6rem 0; background: var(--surface); }
+  .atm-demo {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4rem;
+    align-items: center;
+  }
+  .atm-visual {
+    background: linear-gradient(135deg, #0a1628, #0f2040);
+    border: 2px solid var(--border);
+    border-radius: 16px;
+    padding: 3rem 2rem;
+    text-align: center;
+    position: relative;
+  }
+  .atm-screen {
+    background: #001a0a;
+    border: 2px solid #00ff41;
+    border-radius: 8px;
+    padding: 1.5rem;
+    font-family: var(--font-mono);
+    margin-bottom: 1.5rem;
+    box-shadow: 0 0 20px rgba(0,255,65,0.2);
+  }
+  .atm-title { color: #00ff41; font-size: 0.85rem; letter-spacing: 3px; margin-bottom: 1rem; }
+  .atm-progress { display: flex; flex-direction: column; gap: 0.5rem; }
+  .atm-step {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    font-size: 0.78rem;
+    color: #5a8a6a;
+  }
+  .atm-step.done { color: #00ff41; }
+  .atm-step.active { color: #ffff00; animation: pulse 1.5s ease-in-out infinite; }
+  .step-icon { font-size: 1rem; }
+  @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+  .pin-dots { display: flex; gap: 0.5rem; justify-content: center; margin-top: 1rem; }
+  .pin-dot { width: 12px; height: 12px; background: #00ff41; border-radius: 50%; box-shadow: 0 0 8px #00ff41; }
+  .atm-keypad {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.5rem;
+  }
+  .atm-key {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 0.7rem;
+    font-family: var(--font-mono);
+    font-size: 0.85rem;
+    color: var(--text);
+    text-align: center;
+  }
+  .atm-info h3 { font-size: 1.8rem; font-weight: 700; margin-bottom: 1.5rem; }
+  .atm-info h3 span { color: var(--accent); }
+  .flow-steps { display: flex; flex-direction: column; gap: 1rem; }
+  .flow-step {
+    display: flex;
+    gap: 1rem;
+    align-items: flex-start;
+    padding: 1rem 1.2rem;
+    background: var(--surface2);
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    transition: border-color 0.3s;
+  }
+  .flow-step:hover { border-color: rgba(0,229,255,0.4); }
+  .flow-num {
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    color: var(--accent);
+    background: rgba(0,229,255,0.1);
+    padding: 0.2rem 0.5rem;
+    border-radius: 3px;
+    white-space: nowrap;
+    margin-top: 0.15rem;
+  }
+  .flow-num.orange { color: var(--accent2); background: rgba(255,107,53,0.1); }
+  .flow-step h4 { font-size: 0.95rem; font-weight: 600; margin-bottom: 0.3rem; }
+  .flow-step p { font-size: 0.85rem; color: var(--text-dim); }
+
+  /* TOOLS SECTION */
+  .tools-section { padding: 6rem 0; }
+  .tools-tabs {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    margin-bottom: 2.5rem;
+    justify-content: center;
+  }
+  .tab-btn {
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    letter-spacing: 1px;
+    padding: 0.6rem 1.2rem;
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    background: transparent;
+    color: var(--text-dim);
+    cursor: none;
+    transition: all 0.3s;
+    text-transform: uppercase;
+  }
+  .tab-btn.active, .tab-btn:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: rgba(0,229,255,0.07);
+  }
+  .tab-content { display: none; }
+  .tab-content.active { display: block; animation: fadeIn 0.4s ease; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+  .tools-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1.5rem;
+  }
+  .tool-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1.8rem;
+    transition: all 0.3s;
+    position: relative;
+    overflow: hidden;
+  }
+  .tool-card::after {
+    content: '';
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, var(--accent), transparent);
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 0.4s;
+  }
+  .tool-card:hover::after { transform: scaleX(1); }
+  .tool-card:hover { transform: translateY(-4px); border-color: rgba(0,229,255,0.3); }
+  .tool-icon { font-size: 2rem; margin-bottom: 1rem; }
+  .tool-card h4 { font-size: 1rem; font-weight: 700; margin-bottom: 0.5rem; }
+  .tool-card p { color: var(--text-dim); font-size: 0.85rem; line-height: 1.6; margin-bottom: 1rem; }
+  .tool-badge {
+    font-family: var(--font-mono);
+    font-size: 0.65rem;
+    padding: 0.2rem 0.6rem;
+    border-radius: 2px;
+    background: rgba(0,229,255,0.1);
+    color: var(--accent);
+    border: 1px solid rgba(0,229,255,0.2);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin-right: 0.4rem;
+    margin-bottom: 0.3rem;
+    display: inline-block;
+  }
+  .tool-badge.green { background: rgba(57,255,20,0.1); color: var(--accent3); border-color: rgba(57,255,20,0.2); }
+  .tool-badge.orange { background: rgba(255,107,53,0.1); color: var(--accent2); border-color: rgba(255,107,53,0.2); }
+
+  /* ACCESS CONTROL MODELS */
+  .models-section { padding: 6rem 0; background: var(--surface); }
+  .models-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.5rem;
+  }
+  .model-card {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 2rem;
+    text-align: center;
+    transition: all 0.3s;
+    position: relative;
+  }
+  .model-card:hover {
+    border-color: var(--accent);
+    box-shadow: var(--glow);
+    transform: translateY(-4px);
+  }
+  .model-abbr {
+    font-family: var(--font-mono);
+    font-size: 2.5rem;
+    font-weight: 900;
+    color: var(--accent);
+    text-shadow: var(--glow);
+    margin-bottom: 0.5rem;
+  }
+  .model-card h3 { font-size: 1rem; font-weight: 600; margin-bottom: 1rem; color: var(--text-dim); }
+  .model-card p { font-size: 0.85rem; color: var(--text-dim); line-height: 1.7; margin-bottom: 1.2rem; }
+  .model-examples { display: flex; flex-wrap: wrap; gap: 0.3rem; justify-content: center; }
+
+  /* RESEARCH SECTION */
+  .research-section { padding: 6rem 0; }
+  .paper-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 3rem;
+    max-width: 900px;
+    margin: 0 auto;
+    position: relative;
+    overflow: hidden;
+  }
+  .paper-card::before {
+    content: '[ RESEARCH PAPER ]';
+    font-family: var(--font-mono);
+    font-size: 0.65rem;
+    color: var(--accent);
+    letter-spacing: 3px;
+    display: block;
+    margin-bottom: 2rem;
+  }
+  .paper-title { font-size: 1.5rem; font-weight: 700; margin-bottom: 0.5rem; }
+  .paper-meta { font-family: var(--font-mono); font-size: 0.78rem; color: var(--text-dim); margin-bottom: 2rem; }
+  .abstract-box {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    border-radius: 4px;
+    padding: 1.5rem;
+    font-size: 0.9rem;
+    line-height: 1.8;
+    color: var(--text-dim);
+    margin-bottom: 2rem;
+  }
+  .abstract-box p + p { margin-top: 1rem; }
+  .keywords { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+
+  /* COMPARISON TABLE */
+  .compare-section { padding: 6rem 0; background: var(--surface); }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.88rem;
+  }
+  th {
+    background: var(--surface2);
+    padding: 1rem 1.2rem;
+    text-align: left;
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--accent);
+    border-bottom: 1px solid var(--border);
+  }
+  td {
+    padding: 1rem 1.2rem;
+    border-bottom: 1px solid var(--border);
+    color: var(--text-dim);
+    vertical-align: top;
+  }
+  tr:hover td { background: rgba(0,229,255,0.03); color: var(--text); }
+
+  /* FREE HOSTING SECTION */
+  .hosting-section { padding: 6rem 0; }
+  .hosting-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 1.5rem;
+  }
+  .hosting-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 2rem;
+    text-align: center;
+    transition: all 0.3s;
+  }
+  .hosting-card:hover { border-color: var(--accent3); box-shadow: 0 0 20px rgba(57,255,20,0.15); transform: translateY(-4px); }
+  .hosting-card h4 { font-size: 1rem; font-weight: 700; margin-bottom: 0.5rem; }
+  .hosting-card p { font-size: 0.82rem; color: var(--text-dim); margin-bottom: 1rem; }
+  .hosting-link {
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    color: var(--accent3);
+    text-decoration: none;
+    border-bottom: 1px solid rgba(57,255,20,0.3);
+    padding-bottom: 2px;
+    transition: border-color 0.3s;
+  }
+  .hosting-link:hover { border-color: var(--accent3); }
+  .free-badge {
+    display: inline-block;
+    font-family: var(--font-mono);
+    font-size: 0.62rem;
+    color: var(--accent3);
+    border: 1px solid var(--accent3);
+    padding: 0.15rem 0.5rem;
+    border-radius: 2px;
+    letter-spacing: 1px;
+    margin-bottom: 0.8rem;
+  }
+
+  /* FOOTER */
+  footer {
+    padding: 3rem 2rem;
+    border-top: 1px solid var(--border);
+    text-align: center;
+    position: relative;
+    z-index: 1;
+  }
+  .footer-logo { font-family: var(--font-mono); color: var(--accent); font-size: 1.5rem; text-shadow: var(--glow); margin-bottom: 0.5rem; }
+  footer p { color: var(--text-dim); font-size: 0.82rem; }
+  .donation-note {
+    margin-top: 1.5rem;
+    padding: 1rem 2rem;
+    background: rgba(57,255,20,0.05);
+    border: 1px solid rgba(57,255,20,0.2);
+    border-radius: 4px;
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+    color: var(--accent3);
+    display: inline-block;
+  }
+
+  /* RESPONSIVE */
+  @media (max-width: 768px) {
+    nav { padding: 1rem 1.5rem; }
+    .nav-links { display: none; }
+    .def-grid, .atm-demo, .models-grid { grid-template-columns: 1fr; }
+    .atm-visual { order: -1; }
+  }
+
+  /* SCROLL REVEAL */
+  .reveal {
+    opacity: 0;
+    transform: translateY(40px);
+    transition: opacity 0.7s ease, transform 0.7s ease;
+  }
+  .reveal.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+</style>
+</head>
+<body>
+
+<div class="cursor" id="cursor"></div>
+<div class="cursor-ring" id="cursorRing"></div>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-logo">⚡ CYBERGUARD</div>
+  <ul class="nav-links">
+    <li><a href="#definition">Basics</a></li>
+    <li><a href="#example">Example</a></li>
+    <li><a href="#tools">Tools</a></li>
+    <li><a href="#models">Models</a></li>
+    <li><a href="#research">Research</a></li>
+    <li><a href="#assignment">Assignment</a></li>
+    <li><a href="#lab">Lab</a></li>
+    <li><a href="#profile">Profile</a></li>
+    <li><a href="#hosting">Deploy</a></li>
+  </ul>
+</nav>
+
+<!-- HERO -->
+<section class="hero" id="home">
+  <div class="orb orb1"></div>
+  <div class="orb orb2"></div>
+  <div class="orb orb3"></div>
+
+  <div class="hero-badge">🔐 Cybersecurity Education Platform</div>
+  <h1>Authentication<br>&amp; <span>Access Control</span></h1>
+  <p class="hero-sub">A complete free educational resource on cybersecurity — from basic concepts to advanced IAM tools. Open to everyone.</p>
+  <div class="hero-cta">
+    <a href="#definition" class="btn btn-primary">Start Learning</a>
+    <a href="#research" class="btn btn-ghost">Research Paper</a>
+  </div>
+
+  <div class="terminal">
+    <div class="terminal-bar">
+      <span class="dot dot-r"></span>
+      <span class="dot dot-y"></span>
+      <span class="dot dot-g"></span>
+      <span class="terminal-title">auth-system.sh</span>
+    </div>
+    <div class="terminal-body">
+      <div class="t-line"><span class="t-prompt">$</span><span class="t-cmd"> ./authenticate --user guest</span></div>
+      <div class="t-out">Verifying identity...</div>
+      <div class="t-out ok">✔ Identity verified — TOKEN ISSUED</div>
+      <div class="t-line t-line-gap"><span class="t-prompt">$</span><span class="t-cmd"> ./check-access --resource /admin</span></div>
+      <div class="t-out warn">⚠ ACCESS DENIED — insufficient privileges</div>
+      <div class="t-line t-line-gap"><span class="t-prompt">$</span><span class="t-cmd"> ./check-access --resource /dashboard</span></div>
+      <div class="t-out ok">✔ ACCESS GRANTED — role: user</div>
+      <div class="t-line t-line-gap"><span class="t-prompt">$</span><span class="cursor-blink"></span></div>
+    </div>
+  </div>
+</section>
+
+<!-- DEFINITION -->
+<section class="def-section" id="definition">
+  <div class="container">
+    <div class="section-header reveal">
+      <span class="section-tag">// Core Concepts</span>
+      <h2>What Are These?</h2>
+      <p>Two pillars of every secure system, working together to protect data and resources.</p>
+    </div>
+    <div class="def-grid reveal">
+      <div class="def-card">
+        <div class="def-icon">🔐</div>
+        <div class="def-question">// Answers: "WHO ARE YOU?"</div>
+        <h3>Authentication</h3>
+        <p>Authentication is the process of verifying the identity of a user before allowing access to a system. It checks that you are who you claim to be, using credentials like passwords, biometrics, or tokens. Without authentication, anyone could enter your system.</p>
+        <br>
+        <p class="def-flow def-flow-blue">→ VERIFY → IDENTIFY → GRANT TOKEN</p>
+      </div>
+      <div class="def-card orange">
+        <div class="def-icon">🛡️</div>
+        <div class="def-question">// Answers: "WHAT CAN YOU DO?"</div>
+        <h3>Access Control</h3>
+        <p>Access Control decides what an authenticated user is allowed to do within a system. Even after you're logged in, access control ensures you can only reach resources you're permitted to — protecting sensitive data from unauthorized users.</p>
+        <br>
+        <p class="def-flow def-flow-orange">→ CHECK ROLE → ENFORCE POLICY → ALLOW/DENY</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- EXAMPLE -->
+<section class="example-section" id="example">
+  <div class="container">
+    <div class="section-header reveal">
+      <span class="section-tag">// Real-Life Example</span>
+      <h2>The ATM Machine</h2>
+      <p>A perfect real-world demonstration of both concepts working in sequence.</p>
+    </div>
+    <div class="atm-demo reveal">
+      <div class="atm-visual">
+        <div class="atm-screen">
+          <div class="atm-title">◈ BANK SECURE ATM ◈</div>
+          <div class="atm-progress">
+            <div class="atm-step done"><span class="step-icon">💳</span> Card inserted — reading...</div>
+            <div class="atm-step done"><span class="step-icon">🔢</span> PIN entered — 4 digits</div>
+            <div class="atm-step active"><span class="step-icon">🔄</span> Verifying identity...</div>
+            <div class="atm-step"><span class="step-icon">✅</span> Access granted</div>
+          </div>
+          <div class="pin-dots pin-dots-top">
+            <div class="pin-dot"></div>
+            <div class="pin-dot"></div>
+            <div class="pin-dot"></div>
+            <div class="pin-dot"></div>
+          </div>
+        </div>
+        <div class="atm-keypad">
+          <div class="atm-key">1</div><div class="atm-key">2</div><div class="atm-key">3</div>
+          <div class="atm-key">4</div><div class="atm-key">5</div><div class="atm-key">6</div>
+          <div class="atm-key">7</div><div class="atm-key">8</div><div class="atm-key">9</div>
+          <div class="atm-key atm-key-clr">CLR</div><div class="atm-key">0</div><div class="atm-key atm-key-ok">OK</div>
+        </div>
+      </div>
+      <div class="atm-info">
+        <h3>Authentication <span>+</span> Access Control in Action</h3>
+        <div class="flow-steps">
+          <div class="flow-step">
+            <span class="flow-num">AUTHN 01</span>
+            <div>
+              <h4>Insert ATM Card</h4>
+              <p>Your card carries a unique identifier — this tells the bank who you claim to be.</p>
+            </div>
+          </div>
+          <div class="flow-step">
+            <span class="flow-num">AUTHN 02</span>
+            <div>
+              <h4>Enter Your PIN</h4>
+              <p>The PIN proves your identity. The bank checks your PIN against their records — Authentication complete!</p>
+            </div>
+          </div>
+          <div class="flow-step">
+            <span class="flow-num orange">AUTHZ 03</span>
+            <div>
+              <h4>Access Your Account Only</h4>
+              <p>After authentication, Access Control ensures you can ONLY see and withdraw from your own account — not anyone else's.</p>
+            </div>
+          </div>
+          <div class="flow-step">
+            <span class="flow-num orange">AUTHZ 04</span>
+            <div>
+              <h4>Permission Boundaries</h4>
+              <p>You can withdraw money, check balance — but cannot access admin functions or other users' accounts. This is Access Control.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- TOOLS -->
+<section class="tools-section" id="tools">
+  <div class="container">
+    <div class="section-header reveal">
+      <span class="section-tag">// Advanced Cybersecurity Tools</span>
+      <h2>Professional Security Tools</h2>
+      <p>Industry-standard tools used by companies to implement authentication and access control.</p>
+    </div>
+    <div class="tools-tabs reveal">
+      <button class="tab-btn active" onclick="showTab('iam')">IAM</button>
+      <button class="tab-btn" onclick="showTab('mfa')">MFA</button>
+      <button class="tab-btn" onclick="showTab('bio')">Biometric</button>
+      <button class="tab-btn" onclick="showTab('rbac')">RBAC</button>
+      <button class="tab-btn" onclick="showTab('pam')">PAM</button>
+      <button class="tab-btn" onclick="showTab('sso')">SSO</button>
+      <button class="tab-btn" onclick="showTab('acl')">ACL</button>
+    </div>
+
+    <div id="iam" class="tab-content active">
+      <div class="tools-grid">
+        <div class="tool-card"><div class="tool-icon">🏢</div><h4>Okta</h4><p>Leading cloud-based IAM platform that manages user identities, controls access, and enforces login policies for thousands of applications.</p><span class="tool-badge">Cloud</span><span class="tool-badge green">Enterprise</span></div>
+        <div class="tool-card"><div class="tool-icon">☁️</div><h4>Microsoft Azure AD</h4><p>Microsoft's cloud identity platform providing single sign-on, multi-factor authentication, and conditional access for enterprise environments.</p><span class="tool-badge">Microsoft</span><span class="tool-badge orange">Popular</span></div>
+        <div class="tool-card"><div class="tool-icon">🔑</div><h4>AWS IAM</h4><p>Amazon Web Services Identity and Access Management — controls who can access AWS resources and what actions they can perform.</p><span class="tool-badge">AWS</span><span class="tool-badge green">Free Tier</span></div>
+      </div>
+    </div>
+
+    <div id="mfa" class="tab-content">
+      <div class="tools-grid">
+        <div class="tool-card"><div class="tool-icon">📱</div><h4>Google Authenticator</h4><p>Free mobile app that generates time-based one-time passwords (TOTP) for MFA. Works with thousands of services.</p><span class="tool-badge green">FREE</span><span class="tool-badge">Mobile</span></div>
+        <div class="tool-card"><div class="tool-icon">🔵</div><h4>Microsoft Authenticator</h4><p>Provides MFA with push notifications, biometric verification, and one-time codes. Integrates natively with Microsoft 365.</p><span class="tool-badge green">FREE</span><span class="tool-badge">Push Notify</span></div>
+        <div class="tool-card"><div class="tool-icon">🛡️</div><h4>Duo Security</h4><p>Cisco's MFA solution offering a wide range of second-factor options including push, SMS, hardware tokens, and biometrics.</p><span class="tool-badge">Cisco</span><span class="tool-badge orange">Enterprise</span></div>
+      </div>
+    </div>
+
+    <div id="bio" class="tab-content">
+      <div class="tools-grid">
+        <div class="tool-card"><div class="tool-icon">👆</div><h4>Fingerprint Scanners</h4><p>Authenticate users by scanning unique fingerprint patterns. Used in phones, laptops, banking kiosks, and secure facilities.</p><span class="tool-badge">Hardware</span><span class="tool-badge green">High Security</span></div>
+        <div class="tool-card"><div class="tool-icon">👤</div><h4>Face ID</h4><p>Apple's 3D facial recognition technology maps 30,000+ infrared dots to create a detailed facial model for secure authentication.</p><span class="tool-badge">Apple</span><span class="tool-badge orange">3D Depth</span></div>
+        <div class="tool-card"><div class="tool-icon">👁️</div><h4>Iris Recognition</h4><p>Scans the unique patterns in a person's iris — one of the most accurate biometric methods available, used in high-security locations.</p><span class="tool-badge">Advanced</span><span class="tool-badge green">Very Accurate</span></div>
+      </div>
+    </div>
+
+    <div id="rbac" class="tab-content">
+      <div class="tools-grid">
+        <div class="tool-card"><div class="tool-icon">🗝️</div><h4>Keycloak</h4><p>Open-source IAM solution supporting RBAC, OAuth2, OpenID Connect, and SAML. Highly customizable and free to use.</p><span class="tool-badge green">Open Source</span><span class="tool-badge green">FREE</span></div>
+        <div class="tool-card"><div class="tool-icon">🐧</div><h4>FreeIPA</h4><p>Open-source identity management for Linux/Unix environments. Manages users, groups, and access policies with RBAC.</p><span class="tool-badge green">Open Source</span><span class="tool-badge">Linux</span></div>
+        <div class="tool-card"><div class="tool-icon">🏛️</div><h4>Oracle Identity Manager</h4><p>Enterprise-grade identity governance platform supporting RBAC with role lifecycle management, SOD policies, and audit trails.</p><span class="tool-badge orange">Enterprise</span><span class="tool-badge">Oracle</span></div>
+      </div>
+    </div>
+
+    <div id="pam" class="tab-content">
+      <div class="tools-grid">
+        <div class="tool-card"><div class="tool-icon">🏰</div><h4>CyberArk</h4><p>Market-leading PAM solution for securing, managing, and monitoring privileged accounts and credentials across the enterprise.</p><span class="tool-badge orange">Leader</span><span class="tool-badge">PAM</span></div>
+        <div class="tool-card"><div class="tool-icon">🔭</div><h4>BeyondTrust</h4><p>Provides privileged access management and remote support, protecting admin accounts from insider and external threats.</p><span class="tool-badge">Enterprise</span><span class="tool-badge orange">Monitoring</span></div>
+        <div class="tool-card"><div class="tool-icon">🔐</div><h4>Thycotic (Delinea)</h4><p>Cloud-ready PAM platform offering secret management, session recording, and just-in-time privileged access.</p><span class="tool-badge">Cloud</span><span class="tool-badge green">Modern</span></div>
+      </div>
+    </div>
+
+    <div id="sso" class="tab-content">
+      <div class="tools-grid">
+        <div class="tool-card"><div class="tool-icon">🚪</div><h4>Okta SSO</h4><p>Login once to access thousands of apps. Reduces password fatigue and improves security by centralizing authentication.</p><span class="tool-badge">Cloud</span><span class="tool-badge orange">Popular</span></div>
+        <div class="tool-card"><div class="tool-icon">1️⃣</div><h4>OneLogin</h4><p>Cloud-based SSO and MFA platform that simplifies access management for employees, partners, and customers.</p><span class="tool-badge">SaaS</span><span class="tool-badge green">Easy Setup</span></div>
+        <div class="tool-card"><div class="tool-icon">🔗</div><h4>Ping Identity</h4><p>Enterprise SSO solution supporting SAML, OAuth, and OpenID Connect. Handles billions of authentication events monthly.</p><span class="tool-badge orange">Enterprise</span><span class="tool-badge">Standards</span></div>
+      </div>
+    </div>
+
+    <div id="acl" class="tab-content">
+      <div class="tools-grid">
+        <div class="tool-card"><div class="tool-icon">🌐</div><h4>Cisco Secure ACS</h4><p>Network access control using RADIUS and TACACS+ protocols. Manages who can access routers, switches, and network devices.</p><span class="tool-badge">Cisco</span><span class="tool-badge orange">Network</span></div>
+        <div class="tool-card"><div class="tool-icon">🔥</div><h4>Firewall ACLs</h4><p>Rules configured on firewalls to allow or deny traffic. Every router or firewall uses ACLs to enforce network access policy.</p><span class="tool-badge">Network</span><span class="tool-badge green">Universal</span></div>
+        <div class="tool-card"><div class="tool-icon">🐧</div><h4>Linux SELinux</h4><p>Security-Enhanced Linux provides mandatory access control (MAC) at the OS kernel level — enforcing strict policies on every process.</p><span class="tool-badge green">Open Source</span><span class="tool-badge">OS Level</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ACCESS CONTROL MODELS -->
+<section class="models-section" id="models">
+  <div class="container">
+    <div class="section-header reveal">
+      <span class="section-tag">// Access Control Models</span>
+      <h2>Three Core Models</h2>
+      <p>Different organizations use different models depending on their security needs and structure.</p>
+    </div>
+    <div class="models-grid reveal">
+      <div class="model-card">
+        <div class="model-abbr">RBAC</div>
+        <h3>Role-Based Access Control</h3>
+        <p>Access is assigned based on the user's <strong>role</strong> in the organization. Users with the same role get the same permissions. Easy to manage at scale.</p>
+        <div class="model-examples">
+          <span class="tool-badge">Admin</span>
+          <span class="tool-badge">Manager</span>
+          <span class="tool-badge green">User</span>
+        </div>
+        <br>
+        <p class="model-note">Used in: Hospitals, Universities, Enterprises</p>
+      </div>
+      <div class="model-card">
+        <div class="model-abbr model-abbr-dac">DAC</div>
+        <h3>Discretionary Access Control</h3>
+        <p>The <strong>resource owner</strong> decides who can access their files or data. You can share files with specific people — like Google Docs sharing.</p>
+        <div class="model-examples">
+          <span class="tool-badge orange">Owner</span>
+          <span class="tool-badge orange">Guest</span>
+          <span class="tool-badge orange">Editor</span>
+        </div>
+        <br>
+        <p class="model-note">Used in: File systems, Google Drive, Dropbox</p>
+      </div>
+      <div class="model-card">
+        <div class="model-abbr model-abbr-mac">MAC</div>
+        <h3>Mandatory Access Control</h3>
+        <p>The <strong>system enforces</strong> access policies — not users. Data has sensitivity labels (Top Secret, Confidential). Users can only access what matches their clearance.</p>
+        <div class="model-examples">
+          <span class="tool-badge green">Top Secret</span>
+          <span class="tool-badge green">Secret</span>
+          <span class="tool-badge green">Public</span>
+        </div>
+        <br>
+        <p class="model-note">Used in: Military, Government, Intelligence</p>
+      </div>
+    </div>
+
+    <!-- Comparison Table -->
+    <div class="table-wrapper reveal">
+      <table>
+        <thead>
+          <tr>
+            <th>Feature</th>
+            <th>RBAC</th>
+            <th>DAC</th>
+            <th>MAC</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>Control By</td><td>Roles/Groups</td><td>Resource Owner</td><td>System Policy</td></tr>
+          <tr><td>Flexibility</td><td>Medium</td><td>High</td><td>Low</td></tr>
+          <tr><td>Security Level</td><td>High</td><td>Medium</td><td>Very High</td></tr>
+          <tr><td>Ease of Management</td><td>Easy</td><td>Very Easy</td><td>Complex</td></tr>
+          <tr><td>Best For</td><td>Enterprises</td><td>Personal/SMB</td><td>Government/Military</td></tr>
+          <tr><td>Example Tools</td><td>Keycloak, Azure AD</td><td>Google Drive, NTFS</td><td>SELinux, AppArmor</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- RESEARCH PAPER -->
+<section class="research-section" id="research">
+  <div class="container">
+    <div class="section-header reveal">
+      <span class="section-tag">// Academic Research</span>
+      <h2>Research Paper</h2>
+      <p>A summary of the selected academic paper on Authentication and Access Control mechanisms.</p>
+    </div>
+    <div class="paper-card reveal">
+      <div class="paper-title">Authentication and Access Control Mechanisms in Computer Systems</div>
+      <div class="paper-meta">Published in IEEE / International Journal of Computer Security | Source: Google Scholar</div>
+      <div class="abstract-box">
+        <p><strong class="abstract-label">Abstract:</strong> This research paper explores the critical importance of authentication and access control in protecting modern computer systems from unauthorized access and cyber threats. The paper presents a comprehensive review of authentication mechanisms, including password-based authentication, biometric systems, and multi-factor authentication (MFA).</p>
+        <p>The study examines three primary access control models — Role-Based Access Control (RBAC), Discretionary Access Control (DAC), and Mandatory Access Control (MAC) — analyzing their effectiveness, limitations, and appropriate use cases across different organizational environments.</p>
+        <p>Findings indicate that combining strong multi-factor authentication with properly implemented access control policies significantly reduces the risk of data breaches and cyberattacks. The paper concludes with recommendations for organizations to adopt layered security models and continuously audit their authentication and authorization mechanisms to adapt to evolving threats.</p>
+      </div>
+      <div>
+        <p class="keywords-label">// KEYWORDS</p>
+        <div class="keywords">
+          <span class="tool-badge">Authentication</span>
+          <span class="tool-badge">Access Control</span>
+          <span class="tool-badge green">RBAC</span>
+          <span class="tool-badge green">MFA</span>
+          <span class="tool-badge green">Biometrics</span>
+          <span class="tool-badge orange">Cybersecurity</span>
+          <span class="tool-badge orange">Identity Management</span>
+          <span class="tool-badge">Authorization</span>
+          <span class="tool-badge">Zero Trust</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FREE HOSTING -->
+<section class="hosting-section" id="hosting">
+  <div class="container">
+    <div class="section-header reveal">
+      <span class="section-tag">// Deploy for Free — Share with the World</span>
+      <h2>Free Hosting Platforms</h2>
+      <p>Upload this website for free — no credit card, no billing. Share as a social learning resource.</p>
+    </div>
+    <div class="hosting-grid reveal">
+      <div class="hosting-card">
+        <div class="free-badge">100% FREE</div>
+        <div class="hosting-icon">🌐</div>
+        <h4>GitHub Pages</h4>
+        <p>Upload your HTML file to GitHub, enable Pages in settings. Free forever, custom domain support.</p>
+        <a href="https://pages.github.com" class="hosting-link" target="_blank">pages.github.com →</a>
+      </div>
+      <div class="hosting-card">
+        <div class="free-badge">100% FREE</div>
+        <div class="hosting-icon">⚡</div>
+        <h4>Netlify</h4>
+        <p>Drag and drop your HTML file — it's live in seconds. Free SSL, fast CDN, no credit card needed.</p>
+        <a href="https://netlify.com" class="hosting-link" target="_blank">netlify.com →</a>
+      </div>
+      <div class="hosting-card">
+        <div class="free-badge">100% FREE</div>
+        <div class="hosting-icon">🔼</div>
+        <h4>Vercel</h4>
+        <p>Import from GitHub or deploy directly. Global CDN, free tier with generous bandwidth limits.</p>
+        <a href="https://vercel.com" class="hosting-link" target="_blank">vercel.com →</a>
+      </div>
+      <div class="hosting-card">
+        <div class="free-badge">100% FREE</div>
+        <div class="hosting-icon">🔥</div>
+        <h4>Cloudflare Pages</h4>
+        <p>Unlimited bandwidth on the free tier. Connect your GitHub repo and deploy automatically.</p>
+        <a href="https://pages.cloudflare.com" class="hosting-link" target="_blank">pages.cloudflare.com →</a>
+      </div>
+    </div>
+
+    <div class="github-guide reveal">
+      <h3>🚀 How to Upload (GitHub Pages — Easiest)</h3>
+      <div class="github-steps">
+        <div><span class="step-accent">Step 1:</span> Create a free account at github.com</div>
+        <div><span class="step-accent">Step 2:</span> Create a new repository — name it "cybersecurity-education"</div>
+        <div><span class="step-accent">Step 3:</span> Upload this HTML file — rename to <span class="step-accent3">index.html</span></div>
+        <div><span class="step-accent">Step 4:</span> Go to Settings → Pages → Select branch "main" → Save</div>
+        <div><span class="step-accent3">Done!</span> Your site will be live at: <span class="step-accent">yourusername.github.io/cybersecurity-education</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ASSIGNMENT -->
+<section class="assignment-section" id="assignment">
+  <div class="container">
+    <div class="section-header reveal">
+      <span class="section-tag">// Semester Assignment 1</span>
+      <h2>Cybersecurity Assignment</h2>
+      <p>Exploring Modern Encryption Standards and Protocols — BSIT Program</p>
+    </div>
+
+    <!-- Student Meta -->
+    <div class="assign-meta reveal">
+      <div class="meta-item"><div class="meta-label">Student</div><div class="meta-value">Muhammad Ahmad Jamal</div></div>
+      <div class="meta-item"><div class="meta-label">Roll No / Section</div><div class="meta-value">174 — Section C</div></div>
+      <div class="meta-item"><div class="meta-label">Submitted To</div><div class="meta-value">Sir Arbab Waseem Abbas</div></div>
+    </div>
+
+    <!-- 3 Question Cards -->
+    <div class="assign-grid reveal">
+      <div class="assign-card">
+        <div class="assign-q">// QUESTION 01</div>
+        <h3>Wi-Fi Encryption Standards &amp; Vulnerabilities</h3>
+        <p>Evolution of WEP → WPA → WPA2 → WPA3. Analysis of KRACK vulnerability in WPA2 and practical router security exploration across three models.</p>
+      </div>
+      <div class="assign-card q2">
+        <div class="assign-q">// QUESTION 02</div>
+        <h3>HTTPS, SSL &amp; TLS</h3>
+        <p>Comparison of SSL vs TLS, how HTTPS wraps web requests. Practical SSL Labs scan of university.edu.pk achieving Grade A+.</p>
+      </div>
+      <div class="assign-card q3">
+        <div class="assign-q">// QUESTION 03</div>
+        <h3>End-to-End Encryption in Emails</h3>
+        <p>How E2EE works via PGP/RSA. Comparison of ProtonMail, Tutanota, and Mailfence. Practical encrypted email setup with RSA 4096 key pair.</p>
+      </div>
+    </div>
+
+    <!-- Q1 Deep Dive -->
+    <div class="reveal">
+      <div class="section-header section-header-sm">
+        <span class="section-tag">// Question 1 Detail</span>
+        <h2 class="h2-sub">Wi-Fi Encryption Evolution</h2>
+      </div>
+      <table class="wifi-table">
+        <thead>
+          <tr>
+            <th>Feature</th>
+            <th>WEP (1997)</th>
+            <th>WPA (2003)</th>
+            <th>WPA2 (2004)</th>
+            <th>WPA3 (2018)</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>Encryption</td><td>RC4 stream, 40/104-bit</td><td>TKIP (RC4 dynamic)</td><td>AES-CCMP 128-bit</td><td>AES-GCMP 192/256-bit</td></tr>
+          <tr><td>Key Management</td><td>Static shared key</td><td>802.1X/EAP dynamic</td><td>4-way handshake PSK/EAP</td><td>SAE Dragonfly interactive</td></tr>
+          <tr><td>Vulnerabilities</td><td>IV attacks, cracks in &lt;5 mins</td><td>Downgrades to WEP, MIC exploits</td><td>Offline brute-force, KRACK</td><td>Minimal — no offline cracks</td></tr>
+          <tr><td>Strengths</td><td>Simple setup</td><td>Backward compatible</td><td>Strong AES, widespread</td><td>Forward secrecy, anti-brute force</td></tr>
+        </tbody>
+      </table>
+      <div class="content-block">
+        <h4>🔓 KRACK Vulnerability (WPA2)</h4>
+        KRACK (Key Reinstallation AttaCK) exposed a flaw in WPA2's 4-way handshake in 2017. By replaying message 3, attackers trick clients into reinstalling the key without incrementing the nonce — causing keystream reuse and allowing packet decryption mid-session.
+        <div class="step-list step-list-gap">
+          <div class="step-item"><span class="step-num">FIX 01</span><span>Patch Clients — update OS/firmware via MDM to ignore replays</span></div>
+          <div class="step-item"><span class="step-num">FIX 02</span><span>Router Upgrades — flash KRACK-patched firmware or migrate to WPA3</span></div>
+          <div class="step-item"><span class="step-num">FIX 03</span><span>Layered Defense — enable 802.11w (PMF), segment networks, monitor with Wireshark</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Q2 Deep Dive -->
+    <div class="reveal reveal-gap">
+      <div class="section-header section-header-sm">
+        <span class="section-tag">// Question 2 Detail</span>
+        <h2 class="h2-sub">HTTPS, SSL &amp; TLS Analysis</h2>
+      </div>
+      <div class="content-block orange">
+        <h4>SSL Labs Practical Scan — university.edu.pk</h4>
+        <div class="step-list">
+          <div class="step-item"><span class="step-num" class="step-num-orange">GRADE</span><span><span class="grade-badge">A+</span> Overall — strong handshake, full certificate chain</span></div>
+          <div class="step-item"><span class="step-num" class="step-num-orange">PROTO</span><span>TLS 1.2 / TLS 1.3 active — TLS 1.0 and 1.1 correctly disabled</span></div>
+          <div class="step-item"><span class="step-num" class="step-num-orange">CIPHER</span><span>ECDHE-RSA-AES256-GCM-SHA384 — forward secrecy with 256-bit AES</span></div>
+          <div class="step-item"><span class="step-num" class="step-num-orange">CERT</span><span>DigiCert issuer, SHA-256 signature, valid to 12/2027, EV type</span></div>
+          <div class="step-item"><span class="step-num" class="step-num-orange">VULN</span><span>None detected — Heartbleed-free, no CCS/ROBOT vulnerabilities</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Q3 Deep Dive -->
+    <div class="reveal reveal-gap">
+      <div class="section-header section-header-sm">
+        <span class="section-tag">// Question 3 Detail</span>
+        <h2 class="h2-sub">End-to-End Email Encryption</h2>
+      </div>
+      <div class="content-block green">
+        <h4>ProtonMail Practical Setup</h4>
+        <div class="step-list">
+          <div class="step-item"><span class="step-num" class="step-num-green">STEP 1</span><span>Key Generation — Auto RSA 4096 pair; public uploaded, private stored locally</span></div>
+          <div class="step-item"><span class="step-num" class="step-num-green">STEP 2</span><span>Sending — Browser fetched recipient public key, AES-128 encrypted body, RSA-wrapped key. Lock icon appeared.</span></div>
+          <div class="step-item"><span class="step-num" class="step-num-green">RESULT</span><span>Ciphertext sent successfully. Recipient decrypted instantly. Tamper-proof signature confirmed.</span></div>
+          <div class="step-item"><span class="step-num" class="step-num-green">TECH</span><span>RSA 4096 key exchange + AES-128-GCM cipher suite</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- LAB -->
+<section class="lab-section" id="lab">
+  <div class="container">
+    <div class="section-header reveal">
+      <span class="section-tag">// Lab 1 — TryHackMe</span>
+      <h2>Introduction to Offensive Security</h2>
+      <p>Hands-on ethical hacking lab using TryHackMe's Offensive Security Intro room — BSIT Cybersecurity</p>
+    </div>
+
+    <div class="lab-grid reveal">
+      <!-- Part A -->
+      <div class="lab-card">
+        <div class="lab-part">Part A — Getting Started</div>
+        <h4>TryHackMe Setup &amp; Account</h4>
+        <div class="lab-task"><span class="task-icon">🌐</span><div>Visit tryhackme.com and create a free account using email or Google</div></div>
+        <div class="lab-task"><span class="task-icon">🔍</span><div>Search for <strong>Offensive Security Intro</strong> room and open it</div></div>
+        <div class="lab-task"><span class="task-icon">📖</span><div>Read room description and note the learning objectives carefully</div></div>
+        <div class="lab-answer">✔ Platform: TryHackMe | Room: Offensive Security Intro | <a href="https://tryhackme.com/p/mahmadjamal22226?tab=completed-rooms" target="_blank" rel="noopener" class="thm-inline-link">View My Completed Rooms →</a></div>
+      </div>
+
+      <!-- Part B -->
+      <div class="lab-card">
+        <div class="lab-part">Part B — Understanding Concepts</div>
+        <h4>What is Offensive Security?</h4>
+        <div class="lab-task"><span class="task-icon">🛡️</span><div>Offensive Security is the practice of proactively testing systems by simulating real attacks to find vulnerabilities before malicious hackers do</div></div>
+        <div class="lab-task"><span class="task-icon">⚖️</span><div>Unlike defensive security (which reacts to attacks), offensive security actively seeks out weaknesses through authorized penetration testing</div></div>
+        <div class="lab-answer">✔ Ethical hackers are authorized to find flaws so organizations can fix them</div>
+      </div>
+
+      <!-- Part C -->
+      <div class="lab-card">
+        <div class="lab-part">Part C — Virtual Machine</div>
+        <h4>Connecting to Target Machine</h4>
+        <div class="lab-task"><span class="task-icon">🖥️</span><div>Deploy the target machine inside TryHackMe and wait for IP assignment</div></div>
+        <div class="lab-task"><span class="task-icon">🌐</span><div>Open browser tab, enter the target IP address and observe the webpage</div></div>
+        <div class="lab-task"><span class="task-icon">🔎</span><div>Look for login forms, buttons, links, and page content structure</div></div>
+        <div class="lab-answer">✔ Target appeared to be a banking/finance web application</div>
+      </div>
+
+      <!-- Part D -->
+      <div class="lab-card">
+        <div class="lab-part">Part D — Web Reconnaissance</div>
+        <h4>Discovering Hidden Pages</h4>
+        <div class="lab-task"><span class="task-icon">🔧</span><div>Used <strong>GoBuster</strong> — the tool mentioned for finding hidden directories using wordlists</div></div>
+        <div class="lab-task"><span class="task-icon">📋</span><div>A wordlist is a file containing common directory/page names used to brute-force website paths</div></div>
+        <div class="lab-task"><span class="task-icon">🗂️</span><div>Ran the tool inside TryHackMe's browser-based environment (no local install needed)</div></div>
+        <div class="lab-answer">✔ Hidden path discovered: /bank-transfer (admin transaction page)</div>
+      </div>
+
+      <!-- Part E -->
+      <div class="lab-card">
+        <div class="lab-part">Part E — Exploring the Page</div>
+        <h4>Accessing the Hidden Page</h4>
+        <div class="lab-task"><span class="task-icon">🚪</span><div>Entered the discovered path directly in the browser URL bar</div></div>
+        <div class="lab-task"><span class="task-icon">💳</span><div>The page allowed transferring money between bank accounts — with NO authentication required</div></div>
+        <div class="lab-task"><span class="task-icon">⚠️</span><div>This page should absolutely be private — it was completely public and unprotected</div></div>
+        <div class="lab-answer">✔ Page allowed unauthenticated bank transfers — critical security failure</div>
+      </div>
+
+      <!-- Part F + Questions -->
+      <div class="lab-card">
+        <div class="lab-part">Part F — Security Thinking</div>
+        <h4>CIA Principle Violated</h4>
+        <p class="cia-violation-note">The exposed hidden transfer page violates multiple CIA principles:</p>
+        <div class="cia-grid">
+          <div class="cia-item violated">
+            <div class="cia-letter">C</div>
+            <div class="cia-name">Confidentiality<br>VIOLATED</div>
+          </div>
+          <div class="cia-item violated">
+            <div class="cia-letter">I</div>
+            <div class="cia-name">Integrity<br>VIOLATED</div>
+          </div>
+          <div class="cia-item">
+            <div class="cia-letter">A</div>
+            <div class="cia-name">Availability<br>Not affected</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Lab Q&A -->
+    <div class="reveal reveal-gap">
+      <div class="section-header section-header-sm">
+        <span class="section-tag">// Lab Questions &amp; Answers</span>
+        <h2 class="h2-sub">Student Responses</h2>
+      </div>
+      <div class="col-stack">
+        <div class="content-block">
+          <h4>Q1. What is TryHackMe and why is it useful?</h4>
+          TryHackMe is a free, browser-based cybersecurity learning platform that provides virtual labs, guided rooms, and capture-the-flag (CTF) challenges. It is useful because students can practice real ethical hacking techniques in a safe, legal, controlled environment without needing to set up their own lab infrastructure.
+        </div>
+        <div class="content-block orange">
+          <h4>Q2. What is Offensive Security?</h4>
+          Offensive security is the proactive practice of thinking and acting like an attacker to identify vulnerabilities in systems before real malicious hackers can exploit them. It includes penetration testing, vulnerability scanning, and ethical hacking — all performed with explicit authorization from the system owner.
+        </div>
+        <div class="content-block green">
+          <h4>Q3. What was the purpose of scanning the website?</h4>
+          The purpose was to discover hidden or unlinked pages that are not visible through normal browsing. Tools like GoBuster automate this by testing thousands of common directory names against the web server, revealing pages the developers may have forgotten to secure.
+        </div>
+        <div class="content-block">
+          <h4>Q4. What risk does an exposed hidden page create?</h4>
+          An exposed hidden page — especially one with sensitive functionality like bank transfers — creates a critical security risk. Any attacker who discovers it can perform unauthorized actions, steal data, or manipulate transactions without ever needing a password. This violates Confidentiality and Integrity from the CIA triad.
+        </div>
+        <div class="content-block orange">
+          <h4>Q5. What did you learn from this lab?</h4>
+          This lab demonstrated that security through obscurity (hiding pages without protecting them) is not real security. Just because a page has no visible link does not mean it cannot be found. Proper authentication and access control must be enforced on every sensitive endpoint regardless of how "hidden" it seems.
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PROFILE -->
+<section class="profile-section" id="profile">
+  <div class="container">
+    <div class="section-header reveal">
+      <span class="section-tag">// About the Author</span>
+      <h2>Student Profile</h2>
+      <p>Connect, follow, or leave feedback — this resource is shared freely for everyone.</p>
+    </div>
+    <div class="profile-card reveal">
+      <div class="profile-avatar">👨‍💻</div>
+      <div class="profile-name">Muhammad Ahmad Jamal</div>
+      <div class="profile-title">// BS(IT) · Cybersecurity Student · Roll 174 · Section C</div>
+      <div class="profile-info">Building free cybersecurity education resources as a social contribution.<br>All content is open — feel free to learn, share, and give feedback.</div>
+
+      <div class="social-grid">
+        <a href="https://github.com/ahmadjamal112" class="social-btn github" target="_blank" rel="noopener">
+          <span class="social-icon">🐙</span> GitHub
+        </a>
+        <a href="https://vercel.com/ahmadjamal112" class="social-btn vercel" target="_blank" rel="noopener">
+          <span class="social-icon">▲</span> Vercel
+        </a>
+        <a href="https://tryhackme.com/p/mahmadjamal22226?tab=completed-rooms" class="social-btn tryhackme" target="_blank" rel="noopener">
+          <span class="social-icon">🎯</span> TryHackMe
+        </a>
+        <a href="https://www.facebook.com/share/1Dh1GnuSL4/?mibextid=wwXIfr" class="social-btn facebook" target="_blank" rel="noopener">
+          <span class="social-icon">📘</span> Facebook
+        </a>
+        <a href="https://www.instagram.com/m.ahmad_jon?igsh=MWVxZTFhdWl3bTdmaQ%3D%3D&utm_source=qr" class="social-btn instagram" target="_blank" rel="noopener">
+          <span class="social-icon">📸</span> Instagram
+        </a>
+        <a href="https://www.linkedin.com/in/m-ahmad-jamal-495802294" class="social-btn linkedin" target="_blank" rel="noopener">
+          <span class="social-icon">💼</span> LinkedIn
+        </a>
+      </div>
+
+      <div class="feedback-box">
+        <h4>💬 Leave Feedback or Get in Touch</h4>
+        <p class="feedback-note">This website is shared as a free social contribution to cybersecurity education. If you found it helpful, have suggestions, or want to collaborate — reach out through any of the platforms above. Your feedback helps improve this resource for everyone.</p>
+        <div class="feedback-links">
+          <a href="https://github.com/ahmadjamal112" class="feedback-link" target="_blank" rel="noopener">⭐ Star on GitHub</a>
+          <a href="https://tryhackme.com/p/mahmadjamal22226?tab=completed-rooms" class="feedback-link" target="_blank" rel="noopener">🎯 View TryHackMe Profile</a>
+          <a href="https://www.linkedin.com/in/m-ahmad-jamal-495802294" class="feedback-link" target="_blank" rel="noopener">💼 Connect on LinkedIn</a>
+          <a href="https://www.facebook.com/share/1Dh1GnuSL4/?mibextid=wwXIfr" class="feedback-link" target="_blank" rel="noopener">📨 Message on Facebook</a>
+          <a href="https://www.instagram.com/m.ahmad_jon?igsh=MWVxZTFhdWl3bTdmaQ%3D%3D&utm_source=qr" class="feedback-link" target="_blank" rel="noopener">📸 DM on Instagram</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-logo">⚡ CYBERGUARD</div>
+  <p>Authentication &amp; Access Control — Free Educational Resource</p>
+  <p class="footer-sub">Created by Muhammad Ahmad Jamal · Roll 174 · BSIT Section C · Submitted to Sir Arbab Waseem Abbas</p>
+  <p class="footer-sub">Built as a Semester Project | Open Source | Shared Free for Everyone</p>
+  <div class="donation-note">
+    🌍 This resource is free to use, learn from, and share.<br>
+    Shared as a donation to cybersecurity education worldwide.
+  </div>
+</footer>
+
+<script>
+// Custom Cursor
+const cursor = document.getElementById('cursor');
+const ring = document.getElementById('cursorRing');
+let mx = 0, my = 0, rx = 0, ry = 0;
+
+document.addEventListener('mousemove', e => {
+  mx = e.clientX; my = e.clientY;
+  cursor.style.left = mx - 6 + 'px';
+  cursor.style.top = my - 6 + 'px';
+});
+
+function animateRing() {
+  rx += (mx - rx - 18) * 0.12;
+  ry += (my - ry - 18) * 0.12;
+  ring.style.left = rx + 'px';
+  ring.style.top = ry + 'px';
+  requestAnimationFrame(animateRing);
+}
+animateRing();
+
+// Tabs
+function showTab(id) {
+  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  event.target.classList.add('active');
+}
+
+// Scroll Reveal
+const reveals = document.querySelectorAll('.reveal');
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      e.target.classList.add('visible');
+      observer.unobserve(e.target);
+    }
+  });
+}, { threshold: 0.1 });
+reveals.forEach(r => observer.observe(r));
+
+// ATM animation
+const atmSteps = document.querySelectorAll('.atm-step');
+let current = 0;
+setInterval(() => {
+  atmSteps.forEach((s, i) => {
+    s.classList.remove('active');
+    if (i < current) s.classList.add('done');
+    else s.classList.remove('done');
+  });
+  if (current < atmSteps.length) {
+    atmSteps[current].classList.add('active');
+  }
+  current = (current + 1) % (atmSteps.length + 1);
+}, 1800);
+</script>
+</body>
+</html>
